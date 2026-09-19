@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Theme {
+  DAY
+  NIGHT
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TaskType {
+  ASSIGNMENT
+  HOMEWORK
+  PROJECT
+  QUIZ
+  EXAM
+}
+
+enum NotificationType {
+  TASK_DUE_SOON
+  EXAM_REMINDER
+  SESSION_REMINDER
+  GOAL_PROGRESS
+  STREAK_RISK
+}
+
+model User {
+  id                   String   @id @default(cuid())
+  email                String   @unique
+  passwordHash         String
+  name                 String
+  program              String?
+  currentSemester      String?
+  theme                Theme    @default(NIGHT)
+
+  goalWeeklyHours      Int      @default(20)
+  goalWeeklyTasks      Int      @default(5)
+  goalStreakDays       Int      @default(7)
+
+  pomodoroWorkMinutes  Int      @default(25)
+  pomodoroBreakMinutes Int      @default(5)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  courses          Course[]
+  tasks            Task[]
+  sessions         StudySession[]
+  pomodoroSessions PomodoroSession[]
+  availability     AvailabilityWindow[]
+  notifications    Notification[]
+  refreshTokens    RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Course {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  code       String
+  instructor String?
+  semester   String?
+  credits    Int      @default(3)
+  color      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tasks    Task[]
+  sessions StudySession[]
+
+  @@index([userId])
+}
+
+model Task {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     String?
+  course       Course?   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  dueDate      DateTime  @db.Date
+  priority     Priority  @default(MEDIUM)
+  estimatedMin Int       @default(60)
+  type         TaskType  @default(ASSIGNMENT)
+  done         Boolean   @default(false)
+  doneAt       DateTime? @db.Date
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId, dueDate])
+  @@index([userId, done])
+}
+
+model StudySession {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String?
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  startAt   DateTime
+  endAt     DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, startAt])
+}
+
+model PomodoroSession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startedAt   DateTime
+  completedAt DateTime
+  workMinutes Int
+  createdAt   DateTime @default(now())
+
+  @@index([userId, completedAt])
+}
+
+model AvailabilityWindow {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayOfWeek Int
+  startTime String
+  endTime   String
+
+  @@index([userId])
+}
+
+model Notification {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         NotificationType
+  title        String
+  body         String
+  taskId       String?
+  sessionId    String?
+  scheduledFor DateTime
+  readAt       DateTime?
+  createdAt    DateTime         @default(now())
+
+  @@index([userId, scheduledFor])
+  @@index([userId, readAt])
+}
