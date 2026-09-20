@@ -18,7 +18,12 @@ function cookieOpts(maxAgeMs: number) {
   return {
     httpOnly: true,
     secure: env.cookieSecure,
-    sameSite: 'lax' as const,
+    // Frontend and backend live on different domains in production (e.g.
+    // vercel.app vs railway.app), which browsers treat as cross-site — Lax
+    // cookies are not sent on cross-site fetch/XHR at all, only 'None' is.
+    // 'None' requires Secure, which is only true once cookieSecure is (i.e.
+    // in production over HTTPS); local dev keeps 'lax' since it's same-site.
+    sameSite: (env.cookieSecure ? 'none' : 'lax') as 'none' | 'lax',
     maxAge: maxAgeMs,
     path: '/',
   };

@@ -11,9 +11,11 @@ import calendarRoutes from './calendar.routes';
 import schedulerRoutes from './scheduler.routes';
 import analyticsRoutes from './analytics.routes';
 import notificationRoutes from './notifications.routes';
+import cronRoutes from './cron.routes';
 
 const router = Router();
 
+router.use('/cron', cronRoutes);
 router.use('/auth', authRoutes);
 router.use('/settings', requireAuth, settingsRoutes);
 router.use('/courses', requireAuth, courseRoutes);

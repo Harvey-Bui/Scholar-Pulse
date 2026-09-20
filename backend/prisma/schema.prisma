@@ -3,8 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // DATABASE_URL: pooled connection (e.g. Neon's "-pooler" host) for normal
+  // query traffic from serverless functions.
+  url       = env("DATABASE_URL")
+  // DIRECT_URL: unpooled connection, used only by `prisma migrate`. Pooled
+  // connections (PgBouncer-style) can't run schema migrations reliably.
+  // Point both at the same local Postgres instance in dev — see .env.example.
+  directUrl = env("DIRECT_URL")
 }
 
 enum Theme {
